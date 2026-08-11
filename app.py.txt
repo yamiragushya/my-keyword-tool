@@ -1,117 +1,38 @@
-import docx
 import pandas as pd
 import PyPDF2
 import streamlit as st
-# 1. Page Setup & Styling
-st.set_page_config(
-   page_title="Keyword Matcher Pro",
-   page_icon="🔍",
-   layout="wide",
-)
-# Custom CSS to make the UI look premium and clean
-st.markdown(
-   """
-<style>
-   .main { background-color: #f8f9fa; }
-   .stMetric { background-color: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-   h1 { color: #1E3A8A; font-weight: 700; }
-</style>
-""",
-   unsafe_allow_html=True,
-)
-
-def extract_text(file):
- """Safely reads text from different types of files."""
- if file.type == "text/plain":
-   return file.getvalue().decode("utf-8")
- elif file.type == "application/pdf":
-   reader = PyPDF2.PdfReader(file)
-   return "".join([page.extract_text() or "" for page in reader.pages])
- elif (
-     file.type
-     == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
- ):
-   doc = docx.Document(file)
-   return "\n".join([p.text for p in doc.paragraphs])
- return ""
-
-# 2. Sidebar Control Panel
-with st.sidebar:
- st.header("🛠️ Setup & Files")
- st.markdown("Upload your two files here to begin.")
- # Download template helper for users
- template_text = "keyword_one\nkeyword_two\nkeyword_three"
- st.sidebar.download_button(
-     label="📥 Download Keyword Template (.txt)",
-     data=template_text,
-     file_name="keywords_template.txt",
-     mime="text/plain",
- )
- st.divider()
- # Uploader for your 500 words
- keyword_file = st.file_uploader(
-     "1. Upload Keyword List (.txt)",
-     type=["txt"],
-     help="Provide a plain text file with one word per line.",
- )
- # Uploader for the main document
- doc_file = st.file_uploader(
-     "2. Upload Document to Scan",
-     type=["txt", "pdf", "docx"],
-     help="Supported formats: PDF, Word (DOCX), Text (TXT)",
- )
-# 3. Main Dashboard UI
-st.title("🔍 Bulk Keyword Matcher")
-st.markdown(
-   "Scan extensive documents against thousands of target keywords instantly."
-)
+st.title("🔍 Easy Keyword Matcher")
+st.write("Upload your files below to search for keywords.")
+# Simple Uploaders
+keyword_file = st.file_uploader("1. Upload Keyword List (.txt)", type=["txt"])
+doc_file = st.file_uploader("2. Upload Document (.txt or .pdf)", type=["txt", "pdf"])
 if keyword_file and doc_file:
- with st.spinner("⏳ Extracting data and analyzing content..."):
-   # Read the 500 keywords
-   keywords_raw = keyword_file.getvalue().decode("utf-8")
-   keywords = [k.strip() for k in keywords_raw.splitlines() if k.strip()]
-   keywords_lower = [k.lower() for k in keywords]
-   # Extract text from the main document
-   document_text = extract_text(doc_file)
-   document_text_lower = document_text.lower()
-   # Search for matches
-   results_data = []
-   for kw, kw_low in zip(keywords, keywords_lower):
-     count = document_text_lower.count(kw_low)
-     if count > 0:
-       results_data.append({"Keyword": kw, "Matches Found": count})
-   df_results = pd.DataFrame(results_data)
- # 4. Metrics Dashboard
- st.subheader("📊 Analysis Metrics")
- col1, col2, col3 = st.columns(3)
- with col1:
-   st.metric(label="Total Target Keywords Loaded", value=len(keywords))
- with col2:
-   st.metric(label="Unique Keywords Matched", value=len(df_results))
- with col3:
-   total_hits = df_results["Matches Found"].sum() if not df_results.empty else 0
-   st.metric(label="Total Word Occurrences", value=int(total_hits))
- st.divider()
- # 5. Interactive Results Table
- if not df_results.empty:
-   st.subheader("✅ Match Results Table")
-   st.markdown(
-       "Use the table below to search, sort, and look through your matches."
-   )
-   st.dataframe(
-       df_results,
-       use_container_width=True,
-       hide_index=True,
-   )
-   # Download Button
-   csv = df_results.to_csv(index=False).encode("utf-8")
+ # Load the words
+ keywords_raw = keyword_file.getvalue().decode("utf-8")
+ keywords = [k.strip() for k in keywords_raw.splitlines() if k.strip()]
+ # Load the main text document
+ if doc_file.type == "text/plain":
+   document_text = doc_file.getvalue().decode("utf-8")
+ else:
+   # Process PDF safely
+   reader = PyPDF2.PdfReader(doc_file)
+   document_text = "".join([page.extract_text() or "" for page in reader.pages])
+ document_text_lower = document_text.lower()
+ # Check matches
+ results = []
+ for kw in keywords:
+   count = document_text_lower.count(kw.lower())
+   if count > 0:
+     results.append({"Keyword": kw, "Matches Found": count})
+ # Show results
+ st.write("### 📊 Search Results")
+ if results:
+   df = pd.DataFrame(results)
+   st.dataframe(df)
+   # Download results button
+   csv = df.to_csv(index=False).encode("utf-8")
    st.download_button(
-       label="📥 Download Results as CSV",
-       data=csv,
-       file_name="keyword_matches.csv",
-       mime="text/csv",
+       "📥 Download Results as CSV", csv, "matches.csv", "text/csv"
    )
  else:
-st.info("No keywords from your 500-word list were found in this document.")
-else:
-st.info("👉 Please use the left sidebar panel to upload your files.")
+   st.write("❌ No matching keywords found.")
