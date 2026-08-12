@@ -4,7 +4,7 @@ import streamlit as st
 st.title("🔍 CS Keyword finder Tool - by Yamini")
 st.write("Upload your files below to search for keywords.")
 # Simple Uploaders
-keyword_file = st.file_uploader("1. Upload Keyword List (.txt)", type=["txt"])
+keyword_file = st.file_uploader("1. Upload Keyword List (.txt or .xlsx)", type=["txt", "xlsx", "xls"])
 doc_file = st.file_uploader("2. Upload Document (.txt or .pdf)", type=["txt", "pdf"])
 if keyword_file and doc_file:
  # Load the words
