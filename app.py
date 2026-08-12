@@ -1,7 +1,7 @@
 import pandas as pd
 import PyPDF2
 import streamlit as st
-st.title("🔍 CS Keyword finder Tool - by Yamini")
+st.title("🔍 CS Keyword finder Tool")
 st.write("Upload your files below to search for keywords.")
 # Simple Uploaders
 keyword_file = st.file_uploader("1. Upload Keyword List (.txt or .xlsx)", type=["txt", "xlsx", "xls"])
